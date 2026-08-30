@@ -6,6 +6,7 @@ import {
   useMotionValueEvent,
   useTransform,
 } from "framer-motion";
+import { canScrubVideo, primeInlineVideo } from "@/lib/video";
 
 const MESSAGES = [
   { id: "m1", at: 0.08, text: "Manter o visual alinhado não é apenas vaidade" },
@@ -22,6 +23,7 @@ export default function ScrollVideo() {
   const targetRef = useRef(0);
   const [ready, setReady] = useState(false);
   const reduce = useReducedMotion();
+  const [scrub] = useState(canScrubVideo);
 
   const { scrollYProgress } = useScroll({
     target: sectionRef,
@@ -29,10 +31,11 @@ export default function ScrollVideo() {
   });
 
   // Fade in do vídeo ao entrar na seção (e leve fade out no fim).
+  // No mobile o vídeo já entra visível (autoplay do iOS não gosta de opacity: 0).
   const videoOpacity = useTransform(
     scrollYProgress,
     [0, 0.12, 0.97, 1],
-    [0, 1, 1, 0.35]
+    scrub ? [0, 1, 1, 0.35] : [1, 1, 1, 0.35]
   );
   const videoScale = useTransform(scrollYProgress, [0, 0.12], [1.12, 1]);
 
@@ -41,8 +44,9 @@ export default function ScrollVideo() {
     targetRef.current = Math.min(Math.max(p, 0), 1);
   });
 
+  // Desktop (mouse): raspa o vídeo pelo scroll.
   useEffect(() => {
-    if (reduce) return;
+    if (reduce || !scrub) return;
     const tick = () => {
       const v = videoRef.current;
       const d = durationRef.current;
@@ -58,11 +62,17 @@ export default function ScrollVideo() {
     };
     rafRef.current = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(rafRef.current);
-  }, [reduce]);
+  }, [reduce, scrub]);
+
+  // Touch / iOS: autoplay em loop, inline e mudo.
+  useEffect(() => {
+    if (reduce || scrub) return;
+    return primeInlineVideo(videoRef.current);
+  }, [reduce, scrub]);
 
   const onLoadedMetadata = (e) => {
     durationRef.current = e.currentTarget.duration || 0;
-    e.currentTarget.pause();
+    if (scrub) e.currentTarget.pause();
     setReady(true);
   };
 
@@ -118,6 +128,8 @@ export default function ScrollVideo() {
             muted
             playsInline
             preload="auto"
+            autoPlay={!scrub}
+            loop={!scrub}
             onLoadedMetadata={onLoadedMetadata}
             className="h-full w-full object-cover"
           />

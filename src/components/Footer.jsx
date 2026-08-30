@@ -1,5 +1,13 @@
 import { Link } from "react-router-dom";
-import { Instagram, MapPin, Clock, Phone } from "lucide-react";
+import {
+  Instagram,
+  MapPin,
+  Clock,
+  Phone,
+  CreditCard,
+  Banknote,
+  QrCode,
+} from "lucide-react";
 import {
   INSTAGRAM_URL,
   MAPS_URL,
@@ -8,6 +16,8 @@ import {
   brand,
   payments,
 } from "@/data/site";
+
+const payIcon = { Dinheiro: Banknote, PIX: QrCode };
 
 const nav = [
   { href: "#conceito", label: "Conceito" },
@@ -65,9 +75,26 @@ export default function Footer() {
           <span className="inline-flex items-center gap-2">
             <Clock className="h-4 w-4" /> Seg a Sáb · 09:00 – 19:45
           </span>
-          <span className="mt-2 block text-xs">
-            Pagamento: {payments.join(" · ")}
-          </span>
+
+          <div className="mt-3">
+            <span className="mb-2 block text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              Formas de pagamento
+            </span>
+            <ul className="flex flex-wrap gap-2">
+              {payments.map((p) => {
+                const Icon = payIcon[p] || CreditCard;
+                return (
+                  <li
+                    key={p}
+                    className="inline-flex items-center gap-1.5 rounded-full border border-border px-2.5 py-1 text-xs text-foreground"
+                  >
+                    <Icon className="h-3.5 w-3.5 text-primary" />
+                    {p}
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
         </div>
       </div>
 

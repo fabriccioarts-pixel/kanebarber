@@ -1,4 +1,4 @@
-import { MapPin, Navigation, Phone, CreditCard, Banknote, QrCode } from "lucide-react";
+import { MapPin, Navigation, Phone } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Reveal from "@/components/Reveal";
 import {
@@ -7,13 +7,7 @@ import {
   PHONE_TEL,
   WHATSAPP_URL,
   location,
-  payments,
 } from "@/data/site";
-
-const payIcon = {
-  Dinheiro: Banknote,
-  PIX: QrCode,
-};
 
 export default function Location() {
   return (
@@ -59,37 +53,29 @@ export default function Location() {
               </a>
             </Button>
           </div>
-
-          <div className="mt-8">
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
-              Formas de pagamento
-            </p>
-            <ul className="mt-3 flex flex-wrap gap-2">
-              {payments.map((p) => {
-                const Icon = payIcon[p] || CreditCard;
-                return (
-                  <li
-                    key={p}
-                    className="inline-flex items-center gap-2 rounded-full border border-border bg-background px-3 py-1.5 text-sm text-foreground"
-                  >
-                    <Icon className="h-4 w-4 text-primary" />
-                    {p}
-                  </li>
-                );
-              })}
-            </ul>
-          </div>
         </Reveal>
 
         <Reveal delay={120}>
-          <div className="overflow-hidden rounded-lg border border-border">
-            <iframe
-              title="Mapa da Kane Barber Club"
-              src={location.mapEmbed}
-              className="h-[360px] w-full grayscale-[30%]"
-              loading="lazy"
-              referrerPolicy="no-referrer-when-downgrade"
-            />
+          <div className="space-y-4">
+            <div className="overflow-hidden rounded-lg border border-border">
+              <img
+                src="/fachada.png"
+                alt="Fachada da Kane Barber Club na Ceilândia Norte"
+                className="aspect-[4/3] w-full object-cover"
+                loading="lazy"
+                width="780"
+                height="585"
+              />
+            </div>
+            <div className="overflow-hidden rounded-lg border border-border">
+              <iframe
+                title="Mapa da Kane Barber Club"
+                src={location.mapEmbed}
+                className="h-[300px] w-full grayscale-[30%]"
+                loading="lazy"
+                referrerPolicy="no-referrer-when-downgrade"
+              />
+            </div>
           </div>
         </Reveal>
       </div>
