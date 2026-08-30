@@ -1,36 +1,59 @@
-// Desktop com mouse => dá pra "raspar" o vídeo pelo scroll (setando currentTime).
-// Touch / iOS => setar currentTime de vídeo pausado quase não renderiza frame,
-// então usamos autoplay em loop (mudo + inline), que o iOS reproduz sem problema.
-export function canScrubVideo() {
-  if (typeof window === "undefined" || !window.matchMedia) return true;
-  return window.matchMedia("(hover: hover) and (pointer: fine)").matches;
-}
-
-// Garante que um <video> toque inline no iOS (mudo + playsInline + retry no 1º toque).
-export function primeInlineVideo(video) {
+// "Desbloqueia" um <video> para poder ser controlado por scroll (currentTime).
+// No iOS, setar currentTime só renderiza frame DEPOIS que o vídeo tocou ao menos
+// uma vez — então damos um play() mudo/inline e pausamos em seguida.
+// Retorna uma função de cleanup.
+export function primeScrubVideo(video) {
   if (!video) return () => {};
+
   video.muted = true;
   video.defaultMuted = true;
+  video.playsInline = true;
   video.setAttribute("muted", "");
   video.setAttribute("playsinline", "");
   video.setAttribute("webkit-playsinline", "true");
 
-  const tryPlay = () => {
+  let done = false;
+  const unlock = () => {
+    if (done || !video) return;
     const p = video.play();
-    if (p && typeof p.catch === "function") p.catch(() => {});
+    if (p && typeof p.then === "function") {
+      p.then(() => {
+        // pausa no próximo frame para o iOS "aceitar" seeks depois
+        requestAnimationFrame(() => {
+          try {
+            video.pause();
+          } catch {
+            /* noop */
+          }
+        });
+        done = true;
+      }).catch(() => {
+        /* tenta de novo no primeiro toque */
+      });
+    } else {
+      try {
+        video.pause();
+      } catch {
+        /* noop */
+      }
+      done = true;
+    }
   };
 
-  tryPlay();
-  const onFirstTouch = () => {
-    tryPlay();
-    window.removeEventListener("touchstart", onFirstTouch);
-    window.removeEventListener("pointerdown", onFirstTouch);
+  unlock();
+
+  const onGesture = () => {
+    unlock();
+    if (done) {
+      window.removeEventListener("touchstart", onGesture);
+      window.removeEventListener("pointerdown", onGesture);
+    }
   };
-  window.addEventListener("touchstart", onFirstTouch, { passive: true });
-  window.addEventListener("pointerdown", onFirstTouch, { passive: true });
+  window.addEventListener("touchstart", onGesture, { passive: true });
+  window.addEventListener("pointerdown", onGesture, { passive: true });
 
   return () => {
-    window.removeEventListener("touchstart", onFirstTouch);
-    window.removeEventListener("pointerdown", onFirstTouch);
+    window.removeEventListener("touchstart", onGesture);
+    window.removeEventListener("pointerdown", onGesture);
   };
 }

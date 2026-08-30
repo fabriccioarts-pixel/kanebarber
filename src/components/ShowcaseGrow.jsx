@@ -7,7 +7,7 @@ import {
   useTransform,
 } from "framer-motion";
 import { cn } from "@/lib/utils";
-import { canScrubVideo, primeInlineVideo } from "@/lib/video";
+import { primeScrubVideo } from "@/lib/video";
 
 const LINES = [
   { id: "g1", at: 0.14, side: "left", top: "20%", text: "Senta na cadeira" },
@@ -24,7 +24,6 @@ export default function ShowcaseGrow() {
   const targetRef = useRef(0);
   const [ready, setReady] = useState(false);
   const reduce = useReducedMotion();
-  const [scrub] = useState(canScrubVideo);
 
   const { scrollYProgress } = useScroll({
     target: sectionRef,
@@ -33,11 +32,7 @@ export default function ShowcaseGrow() {
 
   // O vídeo cresce e aparece conforme o scroll avança.
   const scale = useTransform(scrollYProgress, [0, 0.6], [0.42, 1]);
-  const opacity = useTransform(
-    scrollYProgress,
-    [0, 0.08, 0.82, 1],
-    scrub ? [0, 1, 1, 0.15] : [1, 1, 1, 0.15]
-  );
+  const opacity = useTransform(scrollYProgress, [0, 0.08, 0.82, 1], [0, 1, 1, 0.15]);
   const radius = useTransform(scrollYProgress, [0, 0.6], [28, 14]);
   // No fim do scroll o fundo escurece 100% junto com o vídeo.
   const darken = useTransform(scrollYProgress, [0.78, 0.94], [0, 1]);
@@ -46,9 +41,9 @@ export default function ShowcaseGrow() {
     targetRef.current = Math.min(Math.max(p, 0), 1);
   });
 
-  // Desktop (mouse): raspa o vídeo pelo scroll.
+  // Raspa o vídeo seguindo o progresso do scroll (com leve suavização).
   useEffect(() => {
-    if (reduce || !scrub) return;
+    if (reduce) return;
     const tick = () => {
       const v = videoRef.current;
       const d = durationRef.current;
@@ -63,17 +58,11 @@ export default function ShowcaseGrow() {
     };
     rafRef.current = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(rafRef.current);
-  }, [reduce, scrub]);
-
-  // Touch / iOS: autoplay em loop, inline e mudo.
-  useEffect(() => {
-    if (reduce || scrub) return;
-    return primeInlineVideo(videoRef.current);
-  }, [reduce, scrub]);
+  }, [reduce]);
 
   const onLoadedMetadata = (e) => {
     durationRef.current = e.currentTarget.duration || 0;
-    if (scrub) e.currentTarget.pause();
+    primeScrubVideo(e.currentTarget);
     setReady(true);
   };
 
@@ -138,8 +127,6 @@ export default function ShowcaseGrow() {
             muted
             playsInline
             preload="auto"
-            autoPlay={!scrub}
-            loop={!scrub}
             onLoadedMetadata={onLoadedMetadata}
             className="h-full w-full object-contain"
           />
